@@ -1,4 +1,3 @@
-from pickle import TRUE
 import jieba
 import gensim
 import re
@@ -88,14 +87,16 @@ def run_calc(originFilePath, destFilePath):
 isout = []
 
 
-def testTh(dataset,syn_info):
+def testTh(dataset):
+    process_pid = os.getpid()
+    os.makedirs("temp/"+str(process_pid))
+    os.chdir("temp/"+str(process_pid))
     for pyFile1 in dataset:
         for pyFile2 in dataset:
             similarity = run_calc(pyFile1, pyFile2)
             if similarity > 0.8 and similarity != 1:
                 print(pyFile2, "代码相似度：", similarity, "相重文件路径：", pyFile1)
                 break
-    syn_info.append(True)
 
 
 import multiprocessing
@@ -115,22 +116,8 @@ if __name__ == "__main__":
 
     processing_pool = multiprocessing.Pool(processes=threadCount)
     syn_info = multiprocessing.Manager().list()
-    for num in range(threadCount):
-        processing_pool.apply_async(
-            func=testTh,
-            args=(
-                splitPyFileDataSet[num],
-                syn_info,
-            )
-        )
-        # t = threading.Thread(target=testTh, args=(splitPyFileDataSet[num],))
-        # t.setDaemon(True)
-        # t.start()
 
+    processing_pool.map(testTh, splitPyFileDataSet)
     processing_pool.close()
     processing_pool.join()
-    print(syn_info,len(syn_info))
-    pass
-    # while True:
-    #     if len(isout) == 6:
-    #         break
+
