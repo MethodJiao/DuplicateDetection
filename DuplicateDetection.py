@@ -3,6 +3,7 @@ import jieba
 import gensim
 import re
 import os
+import sys
 
 pyFileDataSet = []
 
@@ -71,7 +72,7 @@ def run_calc(originFilePath, destFilePath):
     text2 = filter(str2)
     similarity = calc_similarity(
         text1, text2
-    )  # 生成的similarity变量类型为<class 'numpy.float32'>
+    )  # 生成的similarity变量类型为<class 'numpy.flo at32'>
     result = round(
         similarity.item(), 2
     )  # 借助similarity.item()转化为<class 'float'>，然后再取小数点后两位
@@ -79,15 +80,31 @@ def run_calc(originFilePath, destFilePath):
 
 
 if __name__ == "__main__":
-    getALLSamplePyFile(
-        r"C:\Program Files (x86)\BIMBase建模软件 2023\PythonScript\ParamComponentLib"
-    )  # 需要遍历的path
-    for pyFile in pyFileDataSet:
-        similarity = run_calc(
-            pyFile, r"C:\Users\Method-Jiao\Documents\DuplicateDetection\3.py"
-        )
-        if similarity > 0.9:
-            print("代码相似度：", similarity, "相重文件路径：", pyFile)
+    """
+    & C:/Users/Method-Jiao/AppData/Local/Programs/Python/Python310/python.exe c:/Users/Method-Jiao/Documents/DuplicateDetection/DuplicateDetection.py 'C:\\Program Files (x86)\\BIMBase建模软件 2023\\PythonScript\\ParamComponentLib' "C:\\Users\\Method-Jiao\\Documents\\DuplicateDetection\\3.py"
+    """
+    if len(sys.argv) == 3:
+        sampleDir = sys.argv[1]
+        destFile = sys.argv[2]
+
+        getALLSamplePyFile(sampleDir)  # 需要遍历的path
+
+        for pyFile in pyFileDataSet:
+            similarity = run_calc(pyFile, destFile)
+            if similarity > 0.9:
+                print("代码相似度：", similarity, "相重文件路径：", pyFile)
+                break
+    else:
+        getALLSamplePyFile(
+            r"C:\Program Files (x86)\BIMBase建模软件 2023\PythonScript\ParamComponentLib"
+        )  # 需要遍历的path
+        for pyFile in pyFileDataSet:
+            similarity = run_calc(
+                pyFile, r"C:\Users\Method-Jiao\Documents\DuplicateDetection\3.py"
+            )
+            if similarity > 0.9:
+                print("代码相似度：", similarity, "相重文件路径：", pyFile)
+                break
 
     # 将相似度结果写入指定文件
     # f = open(save_path, 'w', encoding="utf-8")
