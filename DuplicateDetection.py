@@ -1,4 +1,3 @@
-from ast import For
 import jieba
 import gensim
 import re
