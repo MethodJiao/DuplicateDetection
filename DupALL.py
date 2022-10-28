@@ -1,11 +1,15 @@
+from pickle import TRUE
 import jieba
 import gensim
 import re
 import os
 import sys
+import math
+import threading
+from threading import Lock, Thread
 
 pyFileDataSet = []
-
+lock = threading.Lock()
 # 得到当前目录下所有的文件
 def getALLSamplePyFile(path, sp=""):
     filesList = os.listdir(path)
@@ -47,14 +51,17 @@ def filter(string):
 
 # 传入过滤之后的数据，通过调用gensim.similarities.Similarity计算余弦相似度
 def calc_similarity(text1, text2):
+
     texts = [text1, text2]
     dictionary = gensim.corpora.Dictionary(texts)
     corpus = [dictionary.doc2bow(text) for text in texts]
-    similarity = gensim.similarities.Similarity(
+    ge_similarity = gensim.similarities.Similarity(
         "-Similarity-index", corpus, num_features=len(dictionary)
     )
     test_corpus_1 = dictionary.doc2bow(text1)
-    cosine_sim = similarity[test_corpus_1][1]
+    # lock.acquire()
+    cosine_sim = ge_similarity[test_corpus_1][1]
+    # lock.release()
     return cosine_sim
 
 
@@ -78,34 +85,52 @@ def run_calc(originFilePath, destFilePath):
     return result
 
 
+isout = []
+
+
+def testTh(dataset,syn_info):
+    for pyFile1 in dataset:
+        for pyFile2 in dataset:
+            similarity = run_calc(pyFile1, pyFile2)
+            if similarity > 0.8 and similarity != 1:
+                print(pyFile2, "代码相似度：", similarity, "相重文件路径：", pyFile1)
+                break
+    syn_info.append(True)
+
+
+import multiprocessing
+
 if __name__ == "__main__":
-    """
-    & C:/Users/Method-Jiao/AppData/Local/Programs/Python/Python310/python.exe c:/Users/Method-Jiao/Documents/DuplicateDetection/DuplicateDetection.py 'C:\\Program Files (x86)\\BIMBase建模软件 2023\\PythonScript\\ParamComponentLib' "C:\\Users\\Method-Jiao\\Documents\\DuplicateDetection\\3.py"
-    """
-    if len(sys.argv) == 3:
-        sampleDir = sys.argv[1]
-        destFile = sys.argv[2]
 
-        getALLSamplePyFile(sampleDir)  # 需要遍历的path
+    getALLSamplePyFile(
+        r"C:\Program Files (x86)\BIMBase建模软件 2023\PythonScript\ParamComponentLib"
+    )  # 需要遍历的path
+    singleListCount = math.ceil(len(pyFileDataSet) / 24)
 
-        for pyFile in pyFileDataSet:
-            similarity = run_calc(pyFile, destFile)
-            if similarity > 0.8:
-                print("代码相似度：", similarity, "相重文件路径：", pyFile)
-                break
-    else:
-        getALLSamplePyFile(
-            r"C:\Program Files (x86)\BIMBase建模软件 2023\PythonScript\ParamComponentLib"
-        )  # 需要遍历的path
-        for pyFile in pyFileDataSet:
-            similarity = run_calc(
-                pyFile, r"C:\Users\Method-Jiao\Documents\DuplicateDetection\2.py"
+    splitPyFileDataSet = [
+        pyFileDataSet[i : i + singleListCount]
+        for i in range(0, len(pyFileDataSet), singleListCount)
+    ]
+    threadCount = len(splitPyFileDataSet)
+
+    processing_pool = multiprocessing.Pool(processes=threadCount)
+    syn_info = multiprocessing.Manager().list()
+    for num in range(threadCount):
+        processing_pool.apply_async(
+            func=testTh,
+            args=(
+                splitPyFileDataSet[num],
+                syn_info,
             )
-            if similarity > 0.8:
-                print("代码相似度：", similarity, "相重文件路径：", pyFile)
-                break
+        )
+        # t = threading.Thread(target=testTh, args=(splitPyFileDataSet[num],))
+        # t.setDaemon(True)
+        # t.start()
 
-    # 将相似度结果写入指定文件
-    # f = open(save_path, 'w', encoding="utf-8")
-    # f.write("代码相似度： %.4f"%similarity)
-    # f.close()
+    processing_pool.close()
+    processing_pool.join()
+    print(syn_info,len(syn_info))
+    pass
+    # while True:
+    #     if len(isout) == 6:
+    #         break
