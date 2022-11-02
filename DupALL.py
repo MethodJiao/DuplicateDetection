@@ -89,8 +89,8 @@ isout = []
 
 def testTh(dataset):
     process_pid = os.getpid()
-    os.makedirs("temp/"+str(process_pid))
-    os.chdir("temp/"+str(process_pid))
+    os.makedirs("temp/" + str(process_pid))
+    os.chdir("temp/" + str(process_pid))
     for pyFile1 in dataset:
         for pyFile2 in dataset:
             similarity = run_calc(pyFile1, pyFile2)
@@ -120,4 +120,3 @@ if __name__ == "__main__":
     processing_pool.map(testTh, splitPyFileDataSet)
     processing_pool.close()
     processing_pool.join()
-

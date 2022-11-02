@@ -2,7 +2,6 @@ import jieba
 import gensim
 import re
 import os
-import sys
 import multiprocessing
 import math
 
@@ -12,19 +11,16 @@ pyFileDataSet = []
 def getALLSamplePyFile(path, sp=""):
     filesList = os.listdir(path)
 
-    # 处理每一个文件
     sp += " "
     for fileName in filesList:
         # 判断一个文件是否为目录(用绝对路径)  join拼判断接法
         fileAbsPath = os.path.join(path, fileName)
         if os.path.isdir(fileAbsPath):  # 临界条件： 如果不是目录 执行else
-            # print(sp + "目录：",fileName)
-            getALLSamplePyFile(fileAbsPath, sp)  # 递归调用 自己调用自己
+            getALLSamplePyFile(fileAbsPath, sp)  # 递归
         else:
             isPyFile = fileName.endswith(".py")
             if isPyFile:
                 pyFileDataSet.append(fileAbsPath)
-                # print(sp + "py文件：",fileAbsPath)
 
 
 # 获取指定路径的文件内容
@@ -39,7 +35,7 @@ def get_file_contents(path):
     return string
 
 
-# 将读取到的文件内容先把标点符号、转义符号等特殊符号过滤掉，然后再进行结巴分词
+# 将读取到的文件内容先把标点符号、转义符号等特殊符号过滤掉，然后再进行分词
 def filter(string):
     pattern = re.compile("[^a-zA-Z0-9\u4e00-\u9fa5]")
     string = pattern.sub("", string)
@@ -47,7 +43,7 @@ def filter(string):
     return result
 
 
-# 传入过滤之后的数据，通过调用gensim.similarities.Similarity计算余弦相似度
+# 传入过滤之后的数据，计算余弦相似度
 def calc_similarity(text1, text2):
     texts = [text1, text2]
     dictionary = gensim.corpora.Dictionary(texts)
@@ -81,9 +77,10 @@ def run_calc(originFilePath, destFilePath):
 
 
 def testTh(dataset):
+    absPath = os.path.abspath(os.path.dirname(__file__))
     process_pid = os.getpid()
-    os.makedirs("temp/"+str(process_pid))
-    os.chdir("temp/"+str(process_pid))
+    os.makedirs("temp/" + str(process_pid))
+    os.chdir("temp/" + str(process_pid))
     for pyFile1 in dataset:
         similarity = run_calc(
             pyFile1, r"C:\Users\Method-Jiao\Documents\DuplicateDetection\3.py"
@@ -91,7 +88,6 @@ def testTh(dataset):
         if similarity > 0.8:
             print("代码相似度：", similarity, "相重文件路径：", pyFile1)
             break
-    # syn_info.append(True)
 
 
 if __name__ == "__main__":
