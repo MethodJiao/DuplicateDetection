@@ -106,7 +106,7 @@ if __name__ == "__main__":
     getALLSamplePyFile(
         r"C:\Program Files (x86)\BIMBase建模软件 2023\PythonScript\ParamComponentLib"
     )  # 需要遍历的path
-    singleListCount = math.ceil(len(pyFileDataSet) / 24)
+    singleListCount = math.ceil(len(pyFileDataSet) / 12)
 
     splitPyFileDataSet = [
         pyFileDataSet[i : i + singleListCount]

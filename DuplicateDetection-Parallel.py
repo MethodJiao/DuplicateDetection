@@ -4,6 +4,7 @@ import re
 import os
 import multiprocessing
 import math
+import sys
 
 pyFileDataSet = []
 
@@ -76,34 +77,53 @@ def run_calc(originFilePath, destFilePath):
     return result
 
 
-def testTh(dataset):
-    absPath = os.path.abspath(os.path.dirname(__file__))
+def parallelCall(dataset: list):
+    destFile = dataset.pop()
+    # absPath = os.path.abspath(os.path.dirname(__file__))
     process_pid = os.getpid()
     os.makedirs("temp/" + str(process_pid))
     os.chdir("temp/" + str(process_pid))
     for pyFile1 in dataset:
-        similarity = run_calc(
-            pyFile1, r"C:\Users\Method-Jiao\Documents\DuplicateDetection\3.py"
-        )
+        similarity = run_calc(pyFile1, destFile)
         if similarity > 0.8:
             print("代码相似度：", similarity, "相重文件路径：", pyFile1)
             break
 
 
 if __name__ == "__main__":
+    if len(sys.argv) == 3:
+        sampleDir = sys.argv[1]
+        destFile = sys.argv[2]
 
-    getALLSamplePyFile(
-        r"C:\Program Files (x86)\BIMBase建模软件 2023\PythonScript\ParamComponentLib"
-    )  # 需要遍历的path
-    singleListCount = math.ceil(len(pyFileDataSet) / 6)
-    splitPyFileDataSet = [
-        pyFileDataSet[i : i + singleListCount]
-        for i in range(0, len(pyFileDataSet), singleListCount)
-    ]
-    threadCount = len(splitPyFileDataSet)
+        getALLSamplePyFile(sampleDir)  # 需要遍历的path
+        singleListCount = math.ceil(len(pyFileDataSet) / 6)
+        splitPyFileDataSet = [
+            pyFileDataSet[i : i + singleListCount]
+            for i in range(0, len(pyFileDataSet), singleListCount)
+        ]
+        threadCount = len(splitPyFileDataSet)
+        for data in splitPyFileDataSet:
+            data.append(destFile)
+        processing_pool = multiprocessing.Pool(processes=12)
+        syn_info = multiprocessing.Manager().list()
+        processing_pool.map(parallelCall, splitPyFileDataSet)
+        processing_pool.close()
+        processing_pool.join()
 
-    processing_pool = multiprocessing.Pool(processes=12)
-    syn_info = multiprocessing.Manager().list()
-    processing_pool.map(testTh, splitPyFileDataSet)
-    processing_pool.close()
-    processing_pool.join()
+    else:
+        destFile = r"C:\Users\Method-Jiao\Documents\DuplicateDetection\3.py"
+        getALLSamplePyFile(
+            r"C:\Program Files (x86)\BIMBase建模软件 2023\PythonScript\ParamComponentLib"
+        )  # 需要遍历的path
+        singleListCount = math.ceil(len(pyFileDataSet) / 12)
+        splitPyFileDataSet = [
+            pyFileDataSet[i : i + singleListCount]
+            for i in range(0, len(pyFileDataSet), singleListCount)
+        ]
+        threadCount = len(splitPyFileDataSet)
+        for data in splitPyFileDataSet:
+            data.append(destFile)
+        processing_pool = multiprocessing.Pool(processes=12)
+        processing_pool.map(parallelCall, splitPyFileDataSet)
+        processing_pool.close()
+        processing_pool.join()
